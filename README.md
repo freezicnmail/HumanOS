@@ -1,1 +1,1 @@
-# HumanOS
+# Human OS
