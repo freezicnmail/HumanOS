@@ -1,742 +1,980 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=yes">
-  <title>Human OS · 生命驾驶舱</title>
-  <!-- Chart.js 轻量图表库 -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-    }
-
-    body {
-      background: #f5f7fb;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
-      padding: 16px;
-    }
-
-    .app-container {
-      max-width: 800px;
-      width: 100%;
-      background: #ffffff;
-      border-radius: 28px;
-      box-shadow: 0 20px 40px rgba(0, 20, 30, 0.08);
-      padding: 24px 20px 32px;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-
-    /* 头部 */
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .header h1 {
-      font-size: 1.8rem;
-      font-weight: 600;
-      color: #0b2b4a;
-      letter-spacing: -0.3px;
-    }
-    .header .version {
-      background: #eef2f6;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 500;
-      color: #3a5a78;
-    }
-
-    /* 卡片通用设计 */
-    .card {
-      background: #ffffff;
-      border: 1px solid #e9edf2;
-      border-radius: 22px;
-      padding: 18px 16px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
-      transition: all 0.2s ease;
-    }
-
-    /* 评分卡片 */
-    .score-section {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 20px;
-    }
-    .score-circle {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #1e4b6e 0%, #0f3448 100%);
-      color: white;
-      width: 110px;
-      height: 110px;
-      border-radius: 50%;
-      box-shadow: 0 12px 18px rgba(18, 52, 77, 0.25);
-    }
-    .score-number {
-      font-size: 2.8rem;
-      font-weight: 700;
-      line-height: 1;
-    }
-    .score-unit {
-      font-size: 0.8rem;
-      opacity: 0.85;
-      letter-spacing: 0.5px;
-    }
-    .metric-cards {
-      flex: 1;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    .metric-item {
-      background: #f8fafd;
-      border-radius: 16px;
-      padding: 12px;
-      text-align: center;
-      border: 1px solid #eef2f6;
-    }
-    .metric-label {
-      font-size: 0.75rem;
-      color: #5c6f82;
-      margin-bottom: 4px;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-    }
-    .metric-value {
-      font-size: 1.4rem;
-      font-weight: 650;
-      color: #0b2b4a;
-    }
-    .metric-sub {
-      font-size: 0.7rem;
-      color: #7f8c9a;
-    }
-
-    .reminder-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-top: 6px;
-    }
-    .reminder-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: #fff9f0;
-      border-left: 4px solid #e67e22;
-      padding: 10px 12px;
-      border-radius: 12px;
-      font-size: 0.9rem;
-    }
-    .reminder-item.urgent {
-      border-left-color: #d43f3f;
-      background: #fff2f2;
-    }
-    .reminder-text {
-      font-weight: 500;
-      color: #2c3e50;
-    }
-    .reminder-date {
-      color: #7f8c8d;
-      font-size: 0.8rem;
-    }
-
-    .goal-progress {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .goal-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .goal-info {
-      width: 110px;
-      font-size: 0.8rem;
-      font-weight: 500;
-      color: #2c3e50;
-    }
-    .progress-bar-bg {
-      flex: 1;
-      height: 8px;
-      background: #e9edf2;
-      border-radius: 10px;
-      overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%;
-      width: 0%;
-      background: #2f7c6b;
-      border-radius: 10px;
-      transition: width 0.3s;
-    }
-    .goal-percent {
-      font-size: 0.7rem;
-      width: 40px;
-      text-align: right;
-      color: #4a5c6c;
-    }
-
-    .chart-container {
-      margin-top: 6px;
-    }
-    canvas {
-      width: 100% !important;
-      height: auto !important;
-      max-height: 220px;
-    }
-
-    .data-table {
-      margin-top: 8px;
-      overflow-x: auto;
-      border-radius: 14px;
-      border: 1px solid #e9edf2;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.8rem;
-      white-space: nowrap;
-    }
-    th {
-      background: #f4f7fc;
-      padding: 10px 8px;
-      font-weight: 600;
-      color: #1e3b4f;
-      text-align: left;
-      border-bottom: 1px solid #dce3eb;
-    }
-    td {
-      padding: 8px 8px;
-      border-bottom: 1px solid #f0f3f7;
-      color: #2c3e50;
-    }
-    .btn-group {
-      display: flex;
-      gap: 8px;
-      margin-top: 10px;
-      flex-wrap: wrap;
-    }
-    button {
-      background: #ffffff;
-      border: 1px solid #ccd8e3;
-      padding: 8px 16px;
-      border-radius: 30px;
-      font-size: 0.8rem;
-      font-weight: 500;
-      color: #1e3b4f;
-      cursor: pointer;
-      transition: 0.2s;
-      background: #f9fbfd;
-    }
-    button.primary {
-      background: #1e4b6e;
-      border-color: #1e4b6e;
-      color: white;
-    }
-    button:hover {
-      background: #e9f0f5;
-    }
-    button.primary:hover {
-      background: #163d59;
-    }
-    input, select {
-      padding: 8px 12px;
-      border-radius: 20px;
-      border: 1px solid #dce3eb;
-      font-size: 0.8rem;
-      margin-right: 6px;
-      background: white;
-      outline: none;
-    }
-    .add-record {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-      margin-top: 10px;
-    }
-    hr {
-      border: none;
-      border-top: 1px solid #e9edf2;
-      margin: 12px 0;
-    }
-    .footer-note {
-      font-size: 0.7rem;
-      color: #95a5b5;
-      text-align: center;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#12263F" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Human OS · 个人生命驾驶舱</title>
+<style>
+  :root{
+    --ink:#12263F; --ink2:#1B3A5C; --paper:#F3F5F8; --card:#FFFFFF;
+    --good:#1E7F6B; --good-bg:#E4F3EF;
+    --warn:#B8862B; --warn-bg:#FBF2DF;
+    --bad:#B8433A; --bad-bg:#FBE7E5;
+    --neutral:#8A93A3; --neutral-bg:#EDEFF3;
+    --text:#1C2733; --text-mut:#6B7686; --line:#E3E6EC;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    -webkit-tap-highlight-color:transparent;}
+  #app{min-height:100vh;display:flex;flex-direction:column;}
+  .wrap{width:100%;max-width:480px;margin:0 auto;}
+  .topbar{padding:16px 16px 8px;}
+  .topbar-title{font-size:14px;font-weight:700;color:var(--ink);}
+  main{flex:1;overflow-y:auto;padding:0 16px 96px;}
+  .card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 1px 2px rgba(20,30,45,0.06);margin-bottom:0;}
+  .mb2{margin-bottom:8px;} .mb3{margin-bottom:12px;} .mt2{margin-top:8px;} .mt3{margin-top:12px;} .mt4{margin-top:16px;}
+  .row{display:flex;align-items:center;} .between{justify-content:space-between;} .center{justify-content:center;} .wrap-g{flex-wrap:wrap;}
+  .gap2{gap:8px;} .gap1{gap:4px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;}
+  .tone-good{color:var(--good);background:var(--good-bg);}
+  .tone-warn{color:var(--warn);background:var(--warn-bg);}
+  .tone-bad{color:var(--bad);background:var(--bad-bg);}
+  .tone-neutral{color:var(--neutral);background:var(--neutral-bg);}
+  .tone-ink{color:var(--ink);background:#E7ECF2;}
+  .section-title{display:flex;align-items:center;justify-content:space-between;margin:20px 0 8px;}
+  .section-title h3{font-size:14px;font-weight:700;margin:0;color:var(--text);}
+  .link-btn{background:none;border:none;font-size:12px;font-weight:700;color:var(--good);padding:0;cursor:pointer;}
+  .hint{font-size:12px;color:var(--text-mut);text-align:center;padding:14px 0;}
+  label.field{display:block;margin-bottom:12px;}
+  label.field span{display:block;font-size:12px;font-weight:600;color:var(--text-mut);margin-bottom:4px;}
+  .input, select.input, textarea.input{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px;background:#FBFCFE;color:var(--text);font-family:inherit;}
+  textarea.input{min-height:100px;resize:vertical;}
+  .btn{border:none;border-radius:12px;padding:11px;font-weight:700;font-size:14px;cursor:pointer;width:100%;}
+  .btn-good{background:var(--good);color:#fff;}
+  .btn-ink{background:var(--ink2);color:#fff;}
+  .btn-ghost-bad{background:var(--bad-bg);color:var(--bad);font-size:12px;padding:6px 10px;width:auto;display:inline-flex;align-items:center;gap:4px;}
+  .btn-ghost-good{background:var(--good-bg);color:var(--good);font-size:12px;padding:6px 10px;width:auto;display:inline-flex;align-items:center;gap:4px;}
+  .pill{padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;border:2px solid var(--line);color:var(--text-mut);background:none;cursor:pointer;}
+  .pill.active-good{border-color:var(--good);color:var(--good);}
+  .pill.active-warn{border-color:var(--warn);color:var(--warn);}
+  .pill.active-bad{border-color:var(--bad);color:var(--bad);}
+  .pill.active-neutral{border-color:var(--neutral);color:var(--neutral);}
+  .hero{border-radius:16px;padding:20px;background:linear-gradient(135deg,var(--ink),var(--ink2));color:#fff;}
+  .scorering text{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .organ-chip{display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:12px;padding:8px 12px;background:var(--card);flex-shrink:0;border:none;cursor:pointer;}
+  .organ-card{display:block;text-align:left;border:none;background:none;padding:0;cursor:pointer;}
+  .tooth-btn{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;}
+  .tooth-circle{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;}
+  .legend-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 10px;border-radius:999px;}
+  .legend-dot{width:8px;height:8px;border-radius:8px;display:inline-block;}
+  .progress-outer{width:100%;border-radius:999px;height:8px;background:var(--neutral-bg);overflow:hidden;}
+  .progress-inner{height:8px;border-radius:999px;background:var(--good);}
+  .icon-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-radius:16px;padding:20px 0;box-shadow:0 1px 2px rgba(20,30,45,0.06);background:var(--card);border:none;cursor:pointer;position:relative;width:100%;}
+  .icon-tile .count{position:absolute;top:8px;right:8px;font-size:10px;font-weight:700;border-radius:999px;padding:2px 6px;background:var(--bad);color:#fff;}
+  .icon-tile-icon{font-size:22px;}
+  .icon-tile-label{font-size:12px;font-weight:700;color:var(--text);}
+  nav.bottomnav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;z-index:40;
+    padding-bottom:env(safe-area-inset-bottom);}
+  nav.bottomnav .wrap{display:flex;}
+  nav.bottomnav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 0 8px;background:none;border:none;cursor:pointer;}
+  nav.bottomnav .nav-icon{font-size:19px;}
+  nav.bottomnav .nav-label{font-size:10px;font-weight:700;}
+  .sheet-overlay{position:fixed;inset:0;background:rgba(15,23,35,0.45);display:flex;align-items:flex-end;justify-content:center;z-index:50;}
+  .sheet{width:100%;max-width:480px;max-height:88vh;overflow-y:auto;background:var(--paper);border-radius:16px 16px 0 0;padding:16px;}
+  .sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .sheet-head h2{font-size:16px;font-weight:700;margin:0;}
+  .close-btn{background:var(--neutral-bg);border:none;border-radius:999px;width:30px;height:30px;font-size:14px;color:var(--text-mut);cursor:pointer;}
+  .back-btn{display:inline-flex;align-items:center;gap:4px;background:none;border:none;font-size:14px;font-weight:700;color:var(--ink2);cursor:pointer;padding:0;margin-bottom:12px;}
+  pre.summary{font-size:12px;white-space:pre-wrap;font-family:inherit;color:var(--text);margin-top:12px;}
+  .loading-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--text-mut);font-size:14px;}
+  input[type=checkbox]{width:16px;height:16px;}
+  .chart-wrap{width:100%;overflow:hidden;}
+</style>
 </head>
 <body>
-<div class="app-container">
-  <div class="header">
-    <h1>🧬 Human OS</h1>
-    <span class="version">V2.1 · 生命驾驶舱</span>
-  </div>
-
-  <!-- 综合健康评分卡片 -->
-  <div class="card">
-    <div class="score-section">
-      <div class="score-circle">
-        <span class="score-number" id="totalScore">--</span>
-        <span class="score-unit">/100</span>
-      </div>
-      <div class="metric-cards">
-        <div class="metric-item">
-          <div class="metric-label">体重</div>
-          <div class="metric-value" id="lastWeight">-- kg</div>
-          <div class="metric-sub" id="bmiDisplay">BMI --</div>
-        </div>
-        <div class="metric-item">
-          <div class="metric-label">血压</div>
-          <div class="metric-value" id="lastBP">--/--</div>
-          <div class="metric-sub">mmHg</div>
-        </div>
-        <div class="metric-item">
-          <div class="metric-label">睡眠</div>
-          <div class="metric-value" id="lastSleep">--h</div>
-          <div class="metric-sub" id="sleepQuality">--</div>
-        </div>
-        <div class="metric-item">
-          <div class="metric-label">目标完成</div>
-          <div class="metric-value" id="goalProgress">--%</div>
-          <div class="metric-sub">总进度</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 提醒卡片 -->
-  <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <h3 style="font-size:1rem; font-weight:600; color:#1e3b4f;">⏰ 即将到期提醒</h3>
-      <span style="font-size:0.7rem; color:#7f8c8d;">未来30天</span>
-    </div>
-    <div class="reminder-list" id="reminderList"></div>
-  </div>
-
-  <!-- 趋势图表 -->
-  <div class="card">
-    <h3 style="font-size:1rem; font-weight:600; color:#1e3b4f; margin-bottom:8px;">📈 健康趋势 (近10条)</h3>
-    <div class="chart-container">
-      <canvas id="trendChart" width="400" height="180"></canvas>
-    </div>
-  </div>
-
-  <!-- 目标进度 -->
-  <div class="card">
-    <h3 style="font-size:1rem; font-weight:600; color:#1e3b4f; margin-bottom:10px;">🎯 年度健康目标</h3>
-    <div class="goal-progress" id="goalContainer"></div>
-  </div>
-
-  <!-- 健康数据记录表 -->
-  <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <h3 style="font-size:1rem; font-weight:600; color:#1e3b4f;">📋 健康记录</h3>
-      <button id="exportDataBtn" style="font-size:0.7rem;">导出备份</button>
-    </div>
-    <div class="data-table">
-      <table id="dataTable">
-        <thead>
-           <tr><th>日期</th><th>体重(kg)</th><th>收缩压</th><th>舒张压</th><th>睡眠(h)</th><th>质量(1-5)</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-    <div class="add-record">
-      <input type="date" id="newDate" style="width:130px;">
-      <input type="number" id="newWeight" placeholder="体重kg" step="0.1" style="width:85px;">
-      <input type="number" id="newSBP" placeholder="收缩压" style="width:85px;">
-      <input type="number" id="newDBP" placeholder="舒张压" style="width:85px;">
-      <input type="number" id="newSleep" placeholder="睡眠h" step="0.1" style="width:80px;">
-      <select id="newQuality">
-        <option value="">质量</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
-      </select>
-      <button class="primary" id="addRecordBtn">+ 添加记录</button>
-    </div>
-  </div>
-
-  <div class="footer-note">
-    Human OS V2.1 · 数据保存在浏览器中 · 定期导出备份更安全
-  </div>
-</div>
+<div id="app"><div class="loading-screen">加载中…</div></div>
 
 <script>
-  (function() {
-    // ---------- 存储键 ----------
-    const STORAGE_HEALTH = 'humanos_healthdata';
-    const STORAGE_REMINDERS = 'humanos_reminders';
-    const STORAGE_GOALS = 'humanos_goals';
-    const STORAGE_SETTINGS = 'humanos_settings';
+/* ============================== 配色 / 常量 ============================== */
+var TONE_HEX = { good:'#1E7F6B', warn:'#B8862B', bad:'#B8433A', neutral:'#8A93A3', ink:'#12263F' };
 
-    // ---------- 默认预置数据 ----------
-    const defaultHealthData = [
-      { date: '2024-12-01', weight: 79.2, sbp: 138, dbp: 89, sleep: 5.8, quality: 3 },
-      { date: '2024-12-15', weight: 78.5, sbp: 135, dbp: 88, sleep: 6.5, quality: 3 },
-      { date: '2025-01-10', weight: 78.0, sbp: 132, dbp: 85, sleep: 6.2, quality: 4 },
-      { date: '2025-02-08', weight: 77.7, sbp: 130, dbp: 84, sleep: 7.1, quality: 4 },
-      { date: '2025-03-03', weight: 77.3, sbp: 128, dbp: 82, sleep: 7.0, quality: 4 },
-      { date: '2025-04-01', weight: 76.9, sbp: 126, dbp: 81, sleep: 7.5, quality: 5 },
-      { date: '2025-05-05', weight: 76.5, sbp: 124, dbp: 80, sleep: 7.4, quality: 5 },
-      { date: '2025-06-10', weight: 76.1, sbp: 122, dbp: 79, sleep: 7.8, quality: 5 },
-      { date: '2025-07-01', weight: 75.8, sbp: 120, dbp: 78, sleep: 8.0, quality: 5 },
-      { date: '2025-07-14', weight: 75.6, sbp: 118, dbp: 77, sleep: 7.9, quality: 5 }
-    ];
+var ORGAN_TEMPLATES = [
+  { key:'心脏', icon:'❤️', maint:[{item:'心电图/心脏体检',period:12},{item:'血脂检测',period:12}] },
+  { key:'肺', icon:'🫁', maint:[{item:'胸部影像检查',period:12},{item:'肺功能检测',period:24}] },
+  { key:'肝脏', icon:'🫗', maint:[{item:'肝功能检查',period:12},{item:'腹部超声',period:12}] },
+  { key:'肾脏', icon:'💧', maint:[{item:'肾功能检查',period:12},{item:'尿常规',period:12}] },
+  { key:'脑', icon:'🧠', maint:[{item:'神经内科随访/体检',period:12}] },
+  { key:'眼', icon:'👁️', maint:[{item:'视力检查',period:12},{item:'眼底检查',period:12}] },
+  { key:'口腔', icon:'🦷', maint:[{item:'口腔常规检查',period:6}] },
+];
+var TOOTH_STATUS = {
+  healthy:{label:'健康',color:'#1E7F6B',bg:'#E4F3EF'},
+  filled:{label:'补牙',color:'#2F6FED',bg:'#E7EEFD'},
+  root_canal:{label:'根管',color:'#7A4FBE',bg:'#EFE8FA'},
+  crown:{label:'牙冠',color:'#B8862B',bg:'#FBF2DF'},
+  missing:{label:'缺失',color:'#8A93A3',bg:'#EDEFF3'},
+  watch:{label:'观察/问题',color:'#B8433A',bg:'#FBE7E5'},
+};
+var UPPER_TEETH = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16];
+var LOWER_TEETH = [32,31,30,29,28,27,26,25,24,23,22,21,20,19,18,17];
 
-    const defaultReminders = [
-      { text: '口腔洁牙', date: '2025-08-15', period: '每6个月', done: false },
-      { text: '#46 根管治疗年度复查', date: '2025-09-01', period: '每年', done: false },
-      { text: '胆囊息肉腹部超声复查', date: '2025-08-10', period: '每6个月', done: false },
-      { text: '年度全面体检', date: '2025-12-31', period: '每年', done: false },
-      { text: '眼科眼底检查', date: '2025-11-20', period: '每年', done: false }
-    ];
+/* ============================== 小工具函数 ============================== */
+function uid(){ return Math.random().toString(36).slice(2) + Date.now().toString(36); }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function todayStr(){
+  var d = new Date();
+  var local = new Date(d.getTime() - d.getTimezoneOffset()*60000);
+  return local.toISOString().slice(0,10);
+}
+function addMonths(dateStr, n){
+  if(!dateStr) return '';
+  var d = new Date(dateStr + 'T00:00:00');
+  d.setMonth(d.getMonth() + Number(n||0));
+  return d.toISOString().slice(0,10);
+}
+function daysDiff(dateStr){
+  var a = new Date(dateStr + 'T00:00:00').getTime();
+  var b = new Date(todayStr() + 'T00:00:00').getTime();
+  return Math.round((a-b)/86400000);
+}
+function fmtShort(dateStr){
+  if(!dateStr) return '';
+  var p = dateStr.split('-');
+  return p[1] + '-' + p[2];
+}
 
-    const defaultGoals = [
-      { name: '体重 ≤74 kg', target: 74, currentKey: 'weight', betterLower: true, startWorst: 82 },
-      { name: '收缩压 <130', target: 130, currentKey: 'sbp', betterLower: true, startWorst: 150 },
-      { name: '睡眠 ≥7h', target: 7, currentKey: 'sleep', betterLower: false, startBest: 7 }
-    ];
+/* ============================== 评分 / 联动逻辑 ============================== */
+function scoreTier(v, lo, hi){
+  if(v==null || isNaN(v)) return null;
+  if(v>=lo && v<=hi) return 100;
+  var tol = (hi-lo)*0.5;
+  if(v>=lo-tol && v<=hi+tol) return 70;
+  return 40;
+}
+function computeScores(latestLog, profile){
+  if(!latestLog) return null;
+  var heightM = (profile.heightCm||170)/100;
+  var bmi = latestLog.weight ? latestLog.weight/(heightM*heightM) : null;
+  var t = profile.targets;
+  var bmiScore = bmi!=null ? scoreTier(bmi, t.bmi[0], t.bmi[1]) : null;
+  var sbpScore = latestLog.sbp!=null ? scoreTier(latestLog.sbp, t.sbp[0], t.sbp[1]) : null;
+  var dbpScore = latestLog.dbp!=null ? scoreTier(latestLog.dbp, t.dbp[0], t.dbp[1]) : null;
+  var hrScore = latestLog.hr!=null ? scoreTier(latestLog.hr, t.hr[0], t.hr[1]) : null;
+  var sleepScore = latestLog.sleepHours!=null ? scoreTier(latestLog.sleepHours, t.sleep[0], t.sleep[1]) : null;
+  var bpScore = null;
+  if(sbpScore!=null && dbpScore!=null) bpScore = (sbpScore+dbpScore)/2;
+  else if(sbpScore!=null) bpScore = sbpScore;
+  else if(dbpScore!=null) bpScore = dbpScore;
+  var parts = [bmiScore,bpScore,hrScore,sleepScore].filter(function(v){return v!=null;});
+  var total = parts.length ? Math.round(parts.reduce(function(a,b){return a+b;},0)/parts.length) : null;
+  return { bmi:bmi, bmiScore:bmiScore, bpScore:bpScore, hrScore:hrScore, sleepScore:sleepScore, total:total };
+}
+function sleepStatus(hours, bedtime){
+  if(hours==null || !bedtime) return null;
+  var parts = bedtime.split(':').map(Number);
+  var bedHours = (parts[0]||0) + (parts[1]||0)/60;
+  if(bedHours<12) bedHours += 24;
+  if(hours<5.5 || bedHours>24) return '🔴透支';
+  if(hours>=6.5 && bedHours<=23) return '✅达标';
+  return '⚠️轻度不足';
+}
+function dietStatus(meals, veg, noBinge){
+  if(meals==null && veg==null && noBinge==null) return null;
+  var cnt = [meals,veg,noBinge].filter(Boolean).length;
+  if(cnt===3) return '✅良好';
+  if(cnt===2) return '⚠️一般';
+  return '🔴需注意';
+}
+function exerciseStatus(min, sleepToday, prev1, prev2){
+  if(min==null || min==='') return null;
+  var threshold = 20;
+  if(sleepToday==='🔴透支') threshold = 10;
+  else if(prev1 && prev2 && prev1!=='✅达标' && prev2!=='✅达标') threshold = 10;
+  if(min>=threshold) return '✅达标';
+  if(min>=1) return '⚠️轻度活动';
+  return '🔴久坐';
+}
+function overallStatus(sleep, diet, exercise){
+  if(!sleep || !diet || !exercise) return null;
+  if(sleep==='🔴透支') return '需要关注';
+  if(diet==='🔴需注意' && exercise==='🔴久坐') return '特别提醒';
+  if(sleep==='✅达标' && diet==='✅良好' && exercise==='✅达标') return '状态良好';
+  return '基本平稳';
+}
+function enrichLogs(sortedLogs){
+  var sleepHist = [];
+  return sortedLogs.map(function(log){
+    var sleep = sleepStatus(log.sleepHours, log.bedtime);
+    var diet = dietStatus(log.meals, log.veg, log.noBinge);
+    var prev1 = sleepHist[sleepHist.length-1];
+    var prev2 = sleepHist[sleepHist.length-2];
+    var exercise = exerciseStatus(log.exerciseMin, sleep, prev1, prev2);
+    var overall = overallStatus(sleep, diet, exercise);
+    sleepHist.push(sleep);
+    var out = {}; for(var k in log) out[k]=log[k];
+    out.sleep=sleep; out.diet=diet; out.exercise=exercise; out.overall=overall;
+    return out;
+  });
+}
+function reminderStatus(dueDateStr){
+  if(!dueDateStr) return '';
+  var d = daysDiff(dueDateStr);
+  if(d<0) return '已过期';
+  if(d<=30) return '即将到期';
+  return '正常';
+}
+function goalProgress(start, target, current){
+  if(start==null || target==null || current==null || start===target) return null;
+  var p;
+  if(start>target) p = (start-current)/(start-target);
+  else p = (current-start)/(target-start);
+  return Math.max(0, Math.min(1, p));
+}
+function goalLevel(p){
+  if(p==null) return '';
+  if(p>=1) return '已达成';
+  if(p>=0.7) return '进展顺利';
+  if(p>=0.3) return '需要努力';
+  return '刚起步';
+}
+function toneOfStatus(s){
+  if(!s) return 'neutral';
+  if(s.indexOf('✅')>=0 || s==='状态良好' || s==='正常' || s==='良好' || s==='已达成') return 'good';
+  if(s.indexOf('⚠️')>=0 || s==='基本平稳' || s==='即将到期' || s==='观察中' || s==='进展顺利' || s==='需要努力') return 'warn';
+  if(s.indexOf('🔴')>=0 || s==='需要关注' || s==='特别提醒' || s==='已过期' || s==='异常' || s==='刚起步') return 'bad';
+  return 'neutral';
+}
 
-    const defaultSettings = { height: 175, age: 45, gender: '男' };
+/* ============================== 存储 ============================== */
+function loadKey(key, fallback){
+  return window.storage.get(key).then(function(r){
+    return r ? JSON.parse(r.value) : fallback;
+  }).catch(function(){ return fallback; });
+}
+function saveKey(key, value){
+  return window.storage.set(key, JSON.stringify(value)).catch(function(e){ console.error('save failed', key, e); });
+}
 
-    // ---------- 数据加载/保存 ----------
-    function loadData(key, defaults) {
-      const stored = localStorage.getItem(key);
-      if (stored) {
-        try { return JSON.parse(stored); } catch(e) { return defaults; }
-      }
-      return defaults;
+/* ============================== 默认数据 ============================== */
+var DEFAULT_PROFILE = {
+  name:'', heightCm:170, birthYear:1990, gender:'男',
+  targets:{ bmi:[18.5,24], sbp:[90,120], dbp:[60,80], hr:[60,80], sleep:[7,9] }
+};
+function defaultOrgans(){
+  var o = {};
+  ORGAN_TEMPLATES.forEach(function(t){
+    o[t.key] = { status:'待检查', note:'', maintenance:t.maint.map(function(m){return {id:uid(),item:m.item,period:m.period,last:'',note:''};}), history:[] };
+  });
+  return o;
+}
+function defaultTeeth(){
+  var t = {};
+  for(var i=1;i<=32;i++) t[i] = { status:'healthy', note:'', history:[] };
+  return t;
+}
+function defaultReminders(){
+  var d = new Date(); d.setDate(d.getDate()-150);
+  return [{ id:uid(), title:'洁牙', category:'牙科', last:d.toISOString().slice(0,10), period:6, note:'示例，可编辑或删除' }];
+}
+function defaultGoals(){
+  return [{ id:uid(), name:'体重管理', category:'体重', start:75, target:65, current:68.5, due:'2026-12-31', note:'示例：可编辑或删除', createdAt:todayStr() }];
+}
+function defaultLogs(){
+  var d = new Date(); d.setDate(d.getDate()-1);
+  return [{ id:uid(), date:d.toISOString().slice(0,10), weight:68.5, sbp:118, dbp:76, hr:68, sleepHours:7.5, bedtime:'22:40', meals:true, veg:true, noBinge:true, exerciseMin:25, note:'示例数据，可删除' }];
+}
+
+/* ============================== 全局状态 ============================== */
+var state = {
+  loading:true, tab:'home', subPage:null, modalOrgan:null, modalTooth:null,
+  profile:DEFAULT_PROFILE, logs:[], reminders:[], goals:[], organs:defaultOrgans(), teeth:defaultTeeth(), aiNotes:[],
+  aiLoading:false, aiResult:'', localResult:'',
+};
+
+function setState(patch){ Object.assign(state, patch); render(); }
+function persist(key, val){ saveKey(key, val); }
+
+/* ============================== 小型 SVG 图表 ============================== */
+function scoreRingSVG(value, size){
+  size = size||116;
+  var r = (size-14)/2, c = 2*Math.PI*r, pct = value==null?0:value/100;
+  var dash = (c*pct).toFixed(1) + ' ' + c.toFixed(1);
+  return '<svg width="'+size+'" height="'+size+'" class="scorering">'+
+    '<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="10"/>'+
+    '<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="#7FE3C9" stroke-width="10" stroke-dasharray="'+dash+'" stroke-linecap="round" transform="rotate(-90 '+size/2+' '+size/2+')"/>'+
+    '<text x="50%" y="47%" text-anchor="middle" font-size="30" font-weight="700" fill="#fff">'+(value==null?'--':value)+'</text>'+
+    '<text x="50%" y="64%" text-anchor="middle" font-size="11" fill="rgba(255,255,255,0.7)">健康总评分</text>'+
+    '</svg>';
+}
+function miniLineChartSVG(points, color){
+  // points: [{x:label, y:number|null}]
+  var w = 320, h = 120, padL=28, padR=8, padT=10, padB=18;
+  var vals = points.map(function(p){return p.y;}).filter(function(v){return v!=null;});
+  if(vals.length<2) return '<p class="hint">数据不足，继续记录后这里会显示趋势</p>';
+  var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+  if(min===max){ min -= 1; max += 1; }
+  var n = points.length;
+  var stepX = (w-padL-padR)/Math.max(1,n-1);
+  function yOf(v){ return padT + (1-(v-min)/(max-min))*(h-padT-padB); }
+  var coords = [];
+  points.forEach(function(p,i){
+    if(p.y==null) return;
+    coords.push([padL+i*stepX, yOf(p.y)]);
+  });
+  var poly = coords.map(function(c){return c[0].toFixed(1)+','+c[1].toFixed(1);}).join(' ');
+  var dots = coords.map(function(c){return '<circle cx="'+c[0].toFixed(1)+'" cy="'+c[1].toFixed(1)+'" r="2.5" fill="'+color+'"/>';}).join('');
+  var firstLabel = points[0].x, lastLabel = points[points.length-1].x;
+  return '<svg viewBox="0 0 '+w+' '+h+'" class="chart-wrap" style="width:100%;height:140px;">'+
+    '<line x1="'+padL+'" y1="'+(h-padB)+'" x2="'+(w-padR)+'" y2="'+(h-padB)+'" stroke="#E3E6EC" stroke-width="1"/>'+
+    '<text x="2" y="'+yOf(max).toFixed(1)+'" font-size="9" fill="#6B7686">'+max.toFixed(1)+'</text>'+
+    '<text x="2" y="'+yOf(min).toFixed(1)+'" font-size="9" fill="#6B7686">'+min.toFixed(1)+'</text>'+
+    '<polyline points="'+poly+'" fill="none" stroke="'+color+'" stroke-width="2"/>'+
+    dots+
+    '<text x="'+padL+'" y="'+(h-4)+'" font-size="9" fill="#6B7686">'+esc(firstLabel)+'</text>'+
+    '<text x="'+(w-padR-24)+'" y="'+(h-4)+'" font-size="9" fill="#6B7686">'+esc(lastLabel)+'</text>'+
+    '</svg>';
+}
+
+/* ============================== 通用 UI 片段 ============================== */
+function badge(text, tone){ return '<span class="badge tone-'+tone+'">'+esc(text)+'</span>'; }
+
+/* ============================== 首页 ============================== */
+function viewHome(){
+  var sortedLogs = state.logs.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+  var enriched = enrichLogs(sortedLogs);
+  var latest = enriched[enriched.length-1];
+  var scores = computeScores(latest, state.profile);
+
+  var overdue = state.reminders.filter(function(r){return reminderStatus(addMonths(r.last,r.period))==='已过期';}).length;
+  var soon = state.reminders.filter(function(r){return reminderStatus(addMonths(r.last,r.period))==='即将到期';}).length;
+  var goalsP = state.goals.map(function(g){return goalProgress(g.start,g.target,g.current)||0;});
+  var avgGoal = goalsP.length ? Math.round(goalsP.reduce(function(a,b){return a+b;},0)/goalsP.length*100) : 0;
+  var organIssues = Object.keys(state.organs).filter(function(k){var s=state.organs[k].status; return s==='异常'||s==='观察中';}).length;
+
+  var html = '';
+  html += '<div class="hero"><div class="row between">';
+  html += '<div><p style="font-size:12px;color:rgba(255,255,255,0.65);margin:0;">'+(state.profile.name?esc(state.profile.name)+'的驾驶舱':'欢迎回来')+'</p>';
+  html += '<p style="color:#fff;font-size:17px;font-weight:700;margin:2px 0 0;">'+todayStr()+'</p>';
+  html += '<div style="margin-top:8px;">'+(latest && latest.overall ? badge('今日：'+latest.overall, toneOfStatus(latest.overall)) : badge('还没有今日记录','neutral'))+'</div></div>';
+  html += scoreRingSVG(scores?scores.total:null);
+  html += '</div></div>';
+
+  html += '<div class="grid4 mt3">';
+  [['体重', scores?scores.bmiScore:null],['血压', scores?scores.bpScore:null],['心率', scores?scores.hrScore:null],['睡眠', scores?scores.sleepScore:null]].forEach(function(pair){
+    html += '<div class="card" style="text-align:center;padding:12px 4px;">'+
+      '<p style="font-size:18px;font-weight:700;margin:0;font-family:ui-monospace,monospace;">'+(pair[1]==null?'--':pair[1])+'</p>'+
+      '<p style="font-size:11px;color:var(--text-mut);margin:2px 0 0;">'+pair[0]+'</p></div>';
+  });
+  html += '</div>';
+
+  html += '<button class="btn btn-good mt3" data-action="tab" data-value="log">＋ 记录今天</button>';
+
+  html += '<div class="grid2 mt3">';
+  html += '<div class="card"><p style="font-size:12px;color:var(--text-mut);margin:0;">待办提醒</p>'+
+    '<p style="font-size:14px;font-weight:700;margin:4px 0 0;color:'+(overdue?TONE_HEX.bad:'var(--text)')+';">已过期 '+overdue+' 项</p>'+
+    '<p style="font-size:14px;color:var(--text-mut);margin:2px 0 0;">即将到期 '+soon+' 项</p></div>';
+  html += '<div class="card"><p style="font-size:12px;color:var(--text-mut);margin:0;">年度目标</p>'+
+    '<p style="font-size:14px;font-weight:700;margin:4px 0 0;">平均完成 '+avgGoal+'%</p>'+
+    '<p style="font-size:14px;color:var(--text-mut);margin:2px 0 0;">共 '+state.goals.length+' 项目标</p></div>';
+  html += '</div>';
+
+  html += '<div class="section-title"><h3>🧭 器官状态'+(organIssues>0?'（'+organIssues+'项需关注）':'')+'</h3><button class="link-btn" data-action="tab" data-value="organs">查看全部 →</button></div>';
+  html += '<div class="row gap2" style="overflow-x:auto;padding-bottom:4px;">';
+  ORGAN_TEMPLATES.forEach(function(o){
+    var st = state.organs[o.key] ? state.organs[o.key].status : '待检查';
+    html += '<button class="organ-chip" data-action="tab" data-value="organs"><span style="font-size:18px;">'+o.icon+'</span><span style="font-size:11px;">'+o.key+'</span>'+badge(st, toneOfStatus(st))+'</button>';
+  });
+  html += '</div>';
+
+  if(enriched.length>1){
+    var weightPts = enriched.slice(-14).map(function(l){return {x:fmtShort(l.date), y:l.weight};});
+    var sleepPts = enriched.slice(-14).map(function(l){return {x:fmtShort(l.date), y:l.sleepHours};});
+    html += '<div class="section-title"><h3>📈 体重趋势</h3></div><div class="card">'+miniLineChartSVG(weightPts,'#1B3A5C')+'</div>';
+    html += '<div class="section-title"><h3>😴 睡眠时长趋势</h3></div><div class="card">'+miniLineChartSVG(sleepPts,'#1E7F6B')+'</div>';
+  }
+  html += '<div style="height:16px;"></div>';
+  return html;
+}
+
+/* ============================== 记录 ============================== */
+function viewLog(){
+  var sorted = state.logs.slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  var sortedAsc = state.logs.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+  var enrichedAsc = enrichLogs(sortedAsc);
+  function enrichedFor(id){ for(var i=0;i<enrichedAsc.length;i++){ if(enrichedAsc[i].id===id) return enrichedAsc[i]; } return null; }
+
+  var html = '<div class="card">';
+  html += '<p style="font-size:14px;font-weight:700;margin:0 0 12px;">记录今天</p>';
+  html += '<label class="field"><span>日期</span><input class="input" type="date" id="lg-date" value="'+todayStr()+'"></label>';
+  html += '<div class="grid2">';
+  html += '<label class="field"><span>体重 (kg)</span><input class="input" type="number" id="lg-weight"></label>';
+  html += '<label class="field"><span>静息心率 (bpm)</span><input class="input" type="number" id="lg-hr"></label>';
+  html += '<label class="field"><span>收缩压</span><input class="input" type="number" id="lg-sbp"></label>';
+  html += '<label class="field"><span>舒张压</span><input class="input" type="number" id="lg-dbp"></label>';
+  html += '<label class="field"><span>睡眠时长 (h)</span><input class="input" type="number" step="0.1" id="lg-sleep"></label>';
+  html += '<label class="field"><span>入睡时间</span><input class="input" type="time" id="lg-bedtime"></label>';
+  html += '</div>';
+  html += '<label class="field"><span>饮食</span><div class="row gap2 wrap-g">'+
+    '<label style="font-size:14px;display:flex;align-items:center;gap:5px;"><input type="checkbox" id="lg-meals"> 三餐规律</label>'+
+    '<label style="font-size:14px;display:flex;align-items:center;gap:5px;"><input type="checkbox" id="lg-veg"> 蔬菜水果</label>'+
+    '<label style="font-size:14px;display:flex;align-items:center;gap:5px;"><input type="checkbox" id="lg-nobinge"> 无暴饮暴食</label>'+
+    '</div></label>';
+  html += '<label class="field"><span>运动分钟数</span><input class="input" type="number" id="lg-exercise"></label>';
+  html += '<label class="field"><span>备注</span><input class="input" type="text" id="lg-note"></label>';
+  html += '<button class="btn btn-good" data-action="save-log">保存今天的记录</button>';
+  html += '</div>';
+
+  html += '<div class="section-title"><h3>历史记录</h3></div>';
+  if(sorted.length===0) html += '<p class="hint">还没有记录，填写上面的表单开始吧</p>';
+  sorted.forEach(function(l){
+    var en = enrichedFor(l.id);
+    var parts = [];
+    if(l.weight!=null) parts.push('体重'+l.weight+'kg');
+    if(l.sbp && l.dbp) parts.push('血压'+l.sbp+'/'+l.dbp);
+    if(l.hr!=null) parts.push('心率'+l.hr);
+    if(l.sleepHours!=null) parts.push('睡眠'+l.sleepHours+'h');
+    if(l.exerciseMin!=null) parts.push('运动'+l.exerciseMin+'分钟');
+    html += '<div class="card mt2"><div class="row between">'+
+      '<p style="font-size:14px;font-weight:700;margin:0;">'+l.date+'</p>'+
+      '<div class="row gap2">'+(en&&en.overall?badge(en.overall,toneOfStatus(en.overall)):'')+
+      '<button class="btn-ghost-bad" data-action="del-log" data-id="'+l.id+'" style="background:none;">🗑</button></div></div>'+
+      '<p style="font-size:12px;color:var(--text-mut);margin:4px 0 0;">'+esc(parts.join(' · '))+'</p>'+
+      (l.note?'<p style="font-size:12px;color:var(--text-mut);font-style:italic;margin:4px 0 0;">'+esc(l.note)+'</p>':'')+
+      '</div>';
+  });
+  html += '<div style="height:16px;"></div>';
+  return html;
+}
+
+/* ============================== 器官 ============================== */
+function viewOrgans(){
+  var html = '<p style="font-size:12px;color:var(--text-mut);margin:0 0 12px;">点击器官卡片查看维护计划与检查历史</p>';
+  html += '<div class="grid2">';
+  ORGAN_TEMPLATES.forEach(function(t){
+    var d = state.organs[t.key];
+    var hist = (d.history||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+    var latest = hist[0];
+    html += '<button class="organ-card" data-action="open-organ" data-key="'+esc(t.key)+'"><div class="card">'+
+      '<div class="row between"><span style="font-size:24px;">'+t.icon+'</span>'+badge(d.status, toneOfStatus(d.status))+'</div>'+
+      '<p style="font-size:14px;font-weight:700;margin:8px 0 0;">'+t.key+'</p>'+
+      '<p style="font-size:11px;color:var(--text-mut);margin:2px 0 0;">'+(latest?'最近检查 '+latest.date:'暂无检查记录')+'</p>'+
+      '</div></button>';
+  });
+  html += '</div>';
+  if(state.modalOrgan) html += renderOrganModal(state.modalOrgan);
+  html += '<div style="height:16px;"></div>';
+  return html;
+}
+function renderOrganModal(key){
+  var d = state.organs[key];
+  var tpl = ORGAN_TEMPLATES.filter(function(t){return t.key===key;})[0];
+  var hist = (d.history||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  var latest = hist[0];
+  var html = '<div class="sheet-overlay" data-action="close-organ"><div class="sheet" onclick="event.stopPropagation()">';
+  html += '<div class="sheet-head"><h2>'+tpl.icon+' '+esc(key)+'</h2><button class="close-btn" data-action="close-organ">✕</button></div>';
+
+  html += '<label class="field"><span>健康状态</span><div class="row gap2 wrap-g">';
+  ['良好','观察中','异常','待检查'].forEach(function(s){
+    var tone = toneOfStatus(s);
+    var active = d.status===s ? ' active-'+tone : '';
+    html += '<button class="pill'+active+'" data-action="set-organ-status" data-key="'+esc(key)+'" data-status="'+esc(s)+'">'+s+'</button>';
+  });
+  html += '</div></label>';
+  html += '<label class="field"><span>备注</span><input class="input" type="text" value="'+esc(d.note)+'" data-action-change="organ-note" data-key="'+esc(key)+'"></label>';
+  if(latest) html += '<p style="font-size:12px;color:var(--text-mut);margin:-4px 0 12px;">最近一次检查：'+latest.date+' · '+esc(latest.item||'')+'</p>';
+
+  html += '<div class="section-title"><h3>🛠 维护计划</h3></div>';
+  (d.maintenance||[]).forEach(function(m){
+    var due = m.last ? addMonths(m.last, m.period) : '';
+    var st = due ? reminderStatus(due) : '';
+    html += '<div class="card mt2"><div class="row between">'+
+      '<p style="font-size:14px;font-weight:700;margin:0;">'+esc(m.item)+'</p>'+
+      '<div class="row gap2">'+(st?badge(st,toneOfStatus(st)):'')+
+      '<button data-action="del-maint" data-key="'+esc(key)+'" data-id="'+m.id+'" style="background:none;border:none;">🗑</button></div></div>'+
+      '<p style="font-size:12px;color:var(--text-mut);margin:4px 0;">每 '+m.period+' 个月 · 上次 '+(m.last||'未填写')+(due?' · 下次到期 '+due:'')+'</p>'+
+      '<input class="input" type="date" value="'+esc(m.last)+'" data-action-change="maint-last" data-key="'+esc(key)+'" data-id="'+m.id+'">'+
+      '</div>';
+  });
+  html += '<div class="card mt2"><p style="font-size:12px;font-weight:700;color:var(--text-mut);margin:0 0 8px;">新增维护项目</p>'+
+    '<input class="input" type="text" placeholder="项目名称" id="new-maint-item-'+esc(key)+'">'+
+    '<div class="row gap2 mt2"><input class="input" type="number" placeholder="周期(月)" id="new-maint-period-'+esc(key)+'" value="12">'+
+    '<button class="btn btn-ink" style="width:auto;padding:0 16px;" data-action="add-maint" data-key="'+esc(key)+'">添加</button></div></div>';
+
+  html += '<div class="section-title"><h3>📋 检查历史</h3></div>';
+  hist.forEach(function(h){
+    html += '<div class="card mt2"><div class="row between">'+
+      '<p style="font-size:14px;font-weight:700;margin:0;">'+h.date+' · '+esc(h.item||'')+'</p>'+
+      '<button data-action="del-hist" data-key="'+esc(key)+'" data-id="'+h.id+'" style="background:none;border:none;">🗑</button></div>'+
+      (h.result?'<p style="font-size:12px;color:var(--text-mut);margin:4px 0 0;">'+esc(h.result)+'</p>':'')+
+      (h.note?'<p style="font-size:12px;color:var(--text-mut);font-style:italic;margin:2px 0 0;">'+esc(h.note)+'</p>':'')+
+      '</div>';
+  });
+  html += '<div class="card mt2"><p style="font-size:12px;font-weight:700;color:var(--text-mut);margin:0 0 8px;">新增检查记录</p>'+
+    '<input class="input" type="date" id="new-hist-date-'+esc(key)+'" value="'+todayStr()+'">'+
+    '<input class="input mt2" type="text" placeholder="检查项目" id="new-hist-item-'+esc(key)+'">'+
+    '<input class="input mt2" type="text" placeholder="结果/指标" id="new-hist-result-'+esc(key)+'">'+
+    '<input class="input mt2" type="text" placeholder="备注（报告文件名等）" id="new-hist-note-'+esc(key)+'">'+
+    '<button class="btn btn-good mt2" data-action="add-hist" data-key="'+esc(key)+'">添加记录</button></div>';
+  html += '<div style="height:8px;"></div></div></div>';
+  return html;
+}
+
+/* ============================== 牙齿 ============================== */
+function toothBtn(num){
+  var st = state.teeth[num].status;
+  var s = TOOTH_STATUS[st] || TOOTH_STATUS.healthy;
+  return '<button class="tooth-btn" data-action="open-tooth" data-num="'+num+'">'+
+    '<div class="tooth-circle" style="background:'+s.bg+';color:'+s.color+';border:2px solid '+s.color+';">'+num+'</div></button>';
+}
+function viewTeeth(){
+  var html = '<div class="card"><p class="hint" style="padding:0 0 12px;">点击牙位查看/编辑档案（上排为上颌，下排为下颌）</p>';
+  html += '<div class="row between">'+UPPER_TEETH.map(toothBtn).join('')+'</div><div style="height:12px;"></div>';
+  html += '<div class="row between">'+LOWER_TEETH.map(toothBtn).join('')+'</div></div>';
+  html += '<div class="section-title"><h3>图例</h3></div><div class="row gap2 wrap-g">';
+  Object.keys(TOOTH_STATUS).forEach(function(k){
+    var v = TOOTH_STATUS[k];
+    html += '<span class="legend-chip" style="background:'+v.bg+';color:'+v.color+';"><span class="legend-dot" style="background:'+v.color+';"></span>'+v.label+'</span>';
+  });
+  html += '</div>';
+  if(state.modalTooth) html += renderToothModal(state.modalTooth);
+  html += '<div style="height:16px;"></div>';
+  return html;
+}
+function renderToothModal(num){
+  var d = state.teeth[num];
+  var hist = (d.history||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  var html = '<div class="sheet-overlay" data-action="close-tooth"><div class="sheet" onclick="event.stopPropagation()">';
+  html += '<div class="sheet-head"><h2>🦷 '+num+' 号牙</h2><button class="close-btn" data-action="close-tooth">✕</button></div>';
+  html += '<label class="field"><span>状态</span><div class="row gap2 wrap-g">';
+  Object.keys(TOOTH_STATUS).forEach(function(k){
+    var v = TOOTH_STATUS[k];
+    var active = d.status===k ? ' style="border-color:'+v.color+';color:'+v.color+';"' : '';
+    html += '<button class="pill" data-action="set-tooth-status" data-num="'+num+'" data-status="'+k+'"'+active+'>'+v.label+'</button>';
+  });
+  html += '</div></label>';
+  html += '<label class="field"><span>备注</span><input class="input" type="text" value="'+esc(d.note)+'" data-action-change="tooth-note" data-num="'+num+'"></label>';
+  html += '<div class="section-title"><h3>治疗/检查历史</h3></div>';
+  hist.forEach(function(h){
+    html += '<div class="card mt2"><div class="row between">'+
+      '<p style="font-size:14px;font-weight:700;margin:0;">'+h.date+' · '+esc(h.treatment||'')+'</p>'+
+      '<button data-action="del-tooth-hist" data-num="'+num+'" data-id="'+h.id+'" style="background:none;border:none;">🗑</button></div>'+
+      (h.note?'<p style="font-size:12px;color:var(--text-mut);margin:4px 0 0;">'+esc(h.note)+'</p>':'')+
+      '</div>';
+  });
+  html += '<div class="card mt2">'+
+    '<input class="input" type="date" id="new-tooth-date" value="'+todayStr()+'">'+
+    '<input class="input mt2" type="text" placeholder="治疗/检查内容" id="new-tooth-treatment">'+
+    '<input class="input mt2" type="text" placeholder="备注" id="new-tooth-note">'+
+    '<button class="btn btn-good mt2" data-action="add-tooth-hist" data-num="'+num+'">添加记录</button></div>';
+  html += '<div style="height:8px;"></div></div></div>';
+  return html;
+}
+
+/* ============================== 更多：提醒 / 目标 / AI / 时间轴 / 设置 ============================== */
+function pageReminders(){
+  var sorted = state.reminders.slice().sort(function(a,b){return addMonths(a.last,a.period).localeCompare(addMonths(b.last,b.period));});
+  var html = '';
+  if(sorted.length===0) html += '<p class="hint">还没有提醒事项</p>';
+  sorted.forEach(function(r){
+    var due = addMonths(r.last, r.period);
+    var st = reminderStatus(due);
+    html += '<div class="card mt2"><div class="row between">'+
+      '<p style="font-size:14px;font-weight:700;margin:0;">'+esc(r.title)+' <span style="font-size:12px;font-weight:400;color:var(--text-mut);">· '+esc(r.category)+'</span></p>'+
+      badge(st, toneOfStatus(st))+'</div>'+
+      '<p style="font-size:12px;color:var(--text-mut);margin:4px 0 0;">上次 '+r.last+' · 每 '+r.period+' 个月 · 下次到期 '+due+'</p>'+
+      (r.note?'<p style="font-size:12px;color:var(--text-mut);font-style:italic;margin:2px 0 0;">'+esc(r.note)+'</p>':'')+
+      '<div class="row gap2 mt2"><button class="btn-ghost-good" data-action="reminder-done" data-id="'+r.id+'">✓ 刚完成</button>'+
+      '<button class="btn-ghost-bad" data-action="reminder-del" data-id="'+r.id+'">🗑 删除</button></div></div>';
+  });
+  html += '<div class="card mt2"><p style="font-size:12px;font-weight:700;color:var(--text-mut);margin:0 0 8px;">新增提醒</p>'+
+    '<input class="input" type="text" placeholder="提醒项目，如：洁牙" id="new-rem-title">'+
+    '<select class="input mt2" id="new-rem-category">'+['体检','牙科','专科复查','疫苗','其他'].map(function(c){return '<option>'+c+'</option>';}).join('')+'</select>'+
+    '<div class="grid2 mt2"><input class="input" type="date" id="new-rem-last" value="'+todayStr()+'"><input class="input" type="number" placeholder="周期(月)" id="new-rem-period" value="6"></div>'+
+    '<button class="btn btn-good mt2" data-action="reminder-add">添加提醒</button></div>';
+  return html;
+}
+function pageGoals(){
+  var html = '';
+  if(state.goals.length===0) html += '<p class="hint">还没有设定年度目标</p>';
+  state.goals.forEach(function(g){
+    var p = goalProgress(g.start,g.target,g.current);
+    var lvl = goalLevel(p);
+    html += '<div class="card mt2"><div class="row between">'+
+      '<p style="font-size:14px;font-weight:700;margin:0;">'+esc(g.name)+' <span style="font-size:12px;font-weight:400;color:var(--text-mut);">· '+esc(g.category)+'</span></p>'+
+      (lvl?badge(lvl,toneOfStatus(lvl)):'')+'</div>'+
+      '<p style="font-size:12px;color:var(--text-mut);margin:4px 0 0;">起始 '+(g.start??'--')+' → 目标 '+(g.target??'--')+'（当前 '+(g.current??'--')+'）'+(g.due?' · 目标日期 '+g.due:'')+'</p>'+
+      '<div class="progress-outer mt2"><div class="progress-inner" style="width:'+Math.round((p||0)*100)+'%;"></div></div>'+
+      '<div class="row gap2 mt2"><input class="input" type="number" style="width:120px;" placeholder="更新当前值" value="'+(g.current??'')+'" data-action-change="goal-current" data-id="'+g.id+'">'+
+      '<button class="btn-ghost-bad" data-action="goal-del" data-id="'+g.id+'">🗑 删除</button></div></div>';
+  });
+  html += '<div class="card mt2"><p style="font-size:12px;font-weight:700;color:var(--text-mut);margin:0 0 8px;">新增年度目标</p>'+
+    '<input class="input" type="text" placeholder="目标名称" id="new-goal-name">'+
+    '<select class="input mt2" id="new-goal-category">'+['体重','血压','睡眠','运动','饮食','牙科','其他'].map(function(c){return '<option>'+c+'</option>';}).join('')+'</select>'+
+    '<div class="row gap2 mt2">'+
+    '<input class="input" type="number" placeholder="起始值" id="new-goal-start">'+
+    '<input class="input" type="number" placeholder="目标值" id="new-goal-target">'+
+    '<input class="input" type="number" placeholder="当前值" id="new-goal-current">'+
+    '</div><input class="input mt2" type="date" id="new-goal-due">'+
+    '<button class="btn btn-good mt2" data-action="goal-add">添加目标</button></div>';
+  return html;
+}
+function localSummary(){
+  var sortedAsc = state.logs.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+  var enriched = enrichLogs(sortedAsc);
+  var latest = enriched[enriched.length-1];
+  var scores = computeScores(latest, state.profile);
+  var last14 = enriched.slice(-14);
+  var goodDays = last14.filter(function(l){return l.overall==='状态良好';}).length;
+  var attnDays = last14.filter(function(l){return l.overall==='需要关注'||l.overall==='特别提醒';}).length;
+  var organGood = Object.keys(state.organs).filter(function(k){return state.organs[k].status==='良好';}).length;
+  var organWatch = Object.keys(state.organs).filter(function(k){var s=state.organs[k].status;return s==='观察中'||s==='异常';}).length;
+  var goalsDone = state.goals.filter(function(g){return (goalProgress(g.start,g.target,g.current)||0)>=1;}).length;
+  var overdue = state.reminders.filter(function(r){return reminderStatus(addMonths(r.last,r.period))==='已过期';}).length;
+  var lines = [
+    '📅 生成时间：'+todayStr(),
+    scores && scores.total!=null ? '🩺 健康总评分：'+scores.total+' / 100' : '🩺 还没有足够数据计算健康评分',
+    '🔥 近14天：状态良好 '+goodDays+' 天，需要关注 '+attnDays+' 天',
+    '🧭 器官：'+organGood+' 项良好，'+organWatch+' 项需要观察/异常',
+    '🎯 年度目标：已达成 '+goalsDone+' / '+state.goals.length+' 项',
+    overdue>0 ? '⏰ 有 '+overdue+' 项提醒已过期，建议尽快处理' : '⏰ 没有已过期的提醒事项',
+  ];
+  return lines.join('\n');
+}
+function pageAI(){
+  var html = '<div class="card"><p style="font-size:14px;font-weight:700;margin:0 0 8px;">📊 自动健康总结（本地，无需联网）</p>'+
+    '<button class="btn btn-ink" data-action="gen-local">生成健康总结</button>'+
+    (state.localResult ? '<pre class="summary">'+esc(state.localResult)+'</pre>' : '')+
+    '</div>';
+  html += '<div class="section-title"><h3>🤖 AI 解读检查报告</h3></div>';
+  html += '<div class="card"><p class="hint" style="text-align:left;padding:0 0 8px;">粘贴体检/检查报告文字内容，AI 会给出通俗解读（不构成诊断）</p>'+
+    '<textarea class="input" id="ai-report-text"></textarea>'+
+    '<button class="btn btn-good mt2" data-action="gen-ai" '+(state.aiLoading?'disabled':'')+'>'+(state.aiLoading?'解读中…':'✨ AI 解读')+'</button>'+
+    (state.aiResult ? '<pre class="summary">'+esc(state.aiResult)+'</pre>' : '')+
+    '</div>';
+  if(state.aiNotes.length>0){
+    html += '<div class="section-title"><h3>历史解读记录</h3></div>';
+    state.aiNotes.forEach(function(n){
+      html += '<div class="card mt2"><p style="font-size:12px;font-weight:700;margin:0;">'+n.date+'</p><p style="font-size:12px;color:var(--text-mut);margin:4px 0 0;">'+esc(n.input)+'…</p></div>';
+    });
+  }
+  return html;
+}
+function buildTimeline(){
+  var sortedAsc = state.logs.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+  var enriched = enrichLogs(sortedAsc);
+  var events = [];
+  enriched.forEach(function(log){
+    if(log.overall==='需要关注' || log.overall==='特别提醒'){
+      events.push({date:log.date, icon:'⚠️', text:'综合状态：'+log.overall+'（睡眠'+(log.sleep||'--')+' 饮食'+(log.diet||'--')+' 运动'+(log.exercise||'--')+'）'});
+    } else if(log.weight!=null){
+      events.push({date:log.date, icon:'⚖️', text:'记录体重 '+log.weight+' kg'});
     }
+  });
+  Object.keys(state.organs).forEach(function(key){
+    (state.organs[key].history||[]).forEach(function(h){
+      if(h.date) events.push({date:h.date, icon:'🩺', text:key+' · '+(h.item||'检查')+(h.result?' · '+h.result:'')});
+    });
+  });
+  Object.keys(state.teeth).forEach(function(num){
+    (state.teeth[num].history||[]).forEach(function(h){
+      if(h.date) events.push({date:h.date, icon:'🦷', text:num+'号牙 · '+(h.treatment||'')+(h.note?' · '+h.note:'')});
+    });
+  });
+  events.sort(function(a,b){return b.date.localeCompare(a.date);});
+  return events.slice(0,40);
+}
+function pageTimeline(){
+  var events = buildTimeline();
+  var html = '';
+  if(events.length===0) html += '<p class="hint">随着你记录数据，这里会自动生成生命时间轴</p>';
+  events.forEach(function(e){
+    html += '<div class="card mt2"><div class="row" style="align-items:flex-start;gap:8px;">'+
+      '<span>'+e.icon+'</span><div><p style="font-size:12px;font-weight:700;color:var(--text-mut);margin:0;">'+e.date+'</p>'+
+      '<p style="font-size:14px;margin:2px 0 0;">'+esc(e.text)+'</p></div></div></div>';
+  });
+  return html;
+}
+function pageSettings(){
+  var p = state.profile;
+  var labels = {bmi:'BMI', sbp:'收缩压', dbp:'舒张压', hr:'静息心率', sleep:'睡眠时长(h)'};
+  var html = '<div class="card"><p style="font-size:14px;font-weight:700;margin:0 0 8px;">基础信息</p>'+
+    '<label class="field"><span>姓名</span><input class="input" type="text" id="set-name" value="'+esc(p.name)+'"></label>'+
+    '<div class="grid2">'+
+    '<label class="field"><span>身高 (cm)</span><input class="input" type="number" id="set-height" value="'+p.heightCm+'"></label>'+
+    '<label class="field"><span>出生年份</span><input class="input" type="number" id="set-birth" value="'+p.birthYear+'"></label>'+
+    '</div>'+
+    '<label class="field"><span>性别</span><select class="input" id="set-gender"><option'+(p.gender==='男'?' selected':'')+'>男</option><option'+(p.gender==='女'?' selected':'')+'>女</option></select></label>'+
+    '</div>';
+  html += '<div class="section-title"><h3>健康评分目标区间</h3></div><div class="card">';
+  Object.keys(p.targets).forEach(function(k){
+    var v = p.targets[k];
+    html += '<div class="row gap2 mt2"><span style="font-size:12px;color:var(--text-mut);width:96px;flex-shrink:0;">'+labels[k]+'</span>'+
+      '<input class="input" type="number" id="set-target-'+k+'-0" value="'+v[0]+'"><span style="font-size:12px;color:var(--text-mut);">~</span>'+
+      '<input class="input" type="number" id="set-target-'+k+'-1" value="'+v[1]+'"></div>';
+  });
+  html += '</div><button class="btn btn-good mt3" data-action="save-settings">保存设置</button>';
+  return html;
+}
+function viewMore(){
+  var titles = {reminders:'⏰ 提醒事项', goals:'🎯 年度目标', ai:'🤖 AI 问诊', timeline:'🕒 生命时间轴', settings:'⚙️ 基础设置'};
+  if(state.subPage){
+    var body = '';
+    if(state.subPage==='reminders') body = pageReminders();
+    else if(state.subPage==='goals') body = pageGoals();
+    else if(state.subPage==='ai') body = pageAI();
+    else if(state.subPage==='timeline') body = pageTimeline();
+    else if(state.subPage==='settings') body = pageSettings();
+    var html = '<button class="back-btn" data-action="more-back">‹ 返回</button>'+
+      '<h2 style="font-size:17px;font-weight:700;margin:0 0 12px;">'+titles[state.subPage]+'</h2>'+body+'<div style="height:16px;"></div>';
+    return html;
+  }
+  var overdue = state.reminders.filter(function(r){return reminderStatus(addMonths(r.last,r.period))==='已过期';}).length;
+  var tiles = [['reminders','🔔','提醒事项',overdue],['goals','🎯','年度目标',0],['ai','✨','AI 问诊',0],['timeline','🕒','生命时间轴',0],['settings','⚙️','基础设置',0]];
+  var html = '<div class="grid2">';
+  tiles.forEach(function(t){
+    html += '<button class="icon-tile" data-action="more-open" data-page="'+t[0]+'">'+
+      (t[3]?'<span class="count">'+t[3]+'</span>':'')+
+      '<span class="icon-tile-icon">'+t[1]+'</span><span class="icon-tile-label">'+t[2]+'</span></button>';
+  });
+  html += '</div><div style="height:16px;"></div>';
+  return html;
+}
 
-    function saveData(key, data) {
-      localStorage.setItem(key, JSON.stringify(data));
-    }
+/* ============================== 底部导航 ============================== */
+function bottomNav(){
+  var items = [['home','🏠','首页'],['log','📝','记录'],['organs','🫀','器官'],['teeth','🦷','牙齿'],['more','☰','更多']];
+  var html = '<nav class="bottomnav"><div class="wrap">';
+  items.forEach(function(it){
+    var active = state.tab===it[0];
+    html += '<button data-action="tab" data-value="'+it[0]+'" style="color:'+(active?TONE_HEX.good:'#6B7686')+';">'+
+      '<span class="nav-icon">'+it[1]+'</span><span class="nav-label" style="color:'+(active?TONE_HEX.good:'#6B7686')+';">'+it[2]+'</span></button>';
+  });
+  html += '</div></nav>';
+  return html;
+}
 
-    let healthData = loadData(STORAGE_HEALTH, defaultHealthData);
-    let reminders = loadData(STORAGE_REMINDERS, defaultReminders);
-    let goals = loadData(STORAGE_GOALS, defaultGoals);
-    let settings = loadData(STORAGE_SETTINGS, defaultSettings);
+/* ============================== 主渲染 ============================== */
+function render(){
+  var app = document.getElementById('app');
+  if(state.loading){ app.innerHTML = '<div class="loading-screen">加载中…</div>'; return; }
+  var body = '';
+  if(state.tab==='home') body = viewHome();
+  else if(state.tab==='log') body = viewLog();
+  else if(state.tab==='organs') body = viewOrgans();
+  else if(state.tab==='teeth') body = viewTeeth();
+  else if(state.tab==='more') body = viewMore();
 
-    // 确保数据按日期排序
-    healthData.sort((a,b) => (a.date < b.date ? -1 : 1));
+  var html = '<div class="topbar"><div class="wrap"><p class="topbar-title">🩺 Human OS · 个人生命驾驶舱</p></div></div>'+
+    '<main><div class="wrap">'+body+'</div></main>'+
+    bottomNav();
+  app.innerHTML = html;
+  bindEvents();
+}
 
-    // ---------- DOM 元素 ----------
-    const totalScoreEl = document.getElementById('totalScore');
-    const lastWeightEl = document.getElementById('lastWeight');
-    const bmiDisplayEl = document.getElementById('bmiDisplay');
-    const lastBPEl = document.getElementById('lastBP');
-    const lastSleepEl = document.getElementById('lastSleep');
-    const sleepQualityEl = document.getElementById('sleepQuality');
-    const goalProgressEl = document.getElementById('goalProgress');
-    const reminderListEl = document.getElementById('reminderList');
-    const goalContainerEl = document.getElementById('goalContainer');
-    const dataTableBody = document.querySelector('#dataTable tbody');
-    const addRecordBtn = document.getElementById('addRecordBtn');
-    const exportDataBtn = document.getElementById('exportDataBtn');
-    const newDateInput = document.getElementById('newDate');
-    const newWeightInput = document.getElementById('newWeight');
-    const newSBPInput = document.getElementById('newSBP');
-    const newDBPInput = document.getElementById('newDBP');
-    const newSleepInput = document.getElementById('newSleep');
-    const newQualitySelect = document.getElementById('newQuality');
-    const trendCtx = document.getElementById('trendChart').getContext('2d');
+/* ============================== 事件绑定 ============================== */
+function val(id){ var el=document.getElementById(id); return el?el.value:''; }
+function numOrNull(id){ var v=val(id); return v===''?null:Number(v); }
+function checked(id){ var el=document.getElementById(id); return el?el.checked:false; }
 
-    let trendChart;
+function bindEvents(){
+  var app = document.getElementById('app');
 
-    // ---------- 计算函数 ----------
-    function getLastRecord() {
-      return healthData.length ? healthData[healthData.length-1] : null;
-    }
+  app.querySelectorAll('[data-action]').forEach(function(el){
+    el.addEventListener('click', function(ev){
+      var action = el.getAttribute('data-action');
+      handleAction(action, el, ev);
+    });
+  });
+  app.querySelectorAll('[data-action-change]').forEach(function(el){
+    el.addEventListener('change', function(){
+      handleChangeAction(el.getAttribute('data-action-change'), el);
+    });
+  });
+}
 
-    function calculateBMI(weight) {
-      const heightM = settings.height / 100;
-      if (!heightM || heightM <= 0) return 0;
-      return weight / (heightM * heightM);
-    }
+function handleChangeAction(action, el){
+  if(action==='organ-note'){
+    var key = el.getAttribute('data-key');
+    state.organs[key].note = el.value;
+    persist('organs', state.organs); render();
+  } else if(action==='maint-last'){
+    var key2 = el.getAttribute('data-key'), id = el.getAttribute('data-id');
+    state.organs[key2].maintenance = state.organs[key2].maintenance.map(function(m){ return m.id===id ? Object.assign({},m,{last:el.value}) : m; });
+    persist('organs', state.organs); render();
+  } else if(action==='tooth-note'){
+    var num = el.getAttribute('data-num');
+    state.teeth[num].note = el.value;
+    persist('teeth', state.teeth); render();
+  } else if(action==='goal-current'){
+    var gid = el.getAttribute('data-id');
+    state.goals = state.goals.map(function(g){ return g.id===gid ? Object.assign({},g,{current: el.value===''?null:Number(el.value)}) : g; });
+    persist('goals', state.goals); render();
+  }
+}
 
-    function computeScores() {
-      const last = getLastRecord();
-      if (!last) return { total: null, weightScore: null, bpScore: null, sleepScore: null, bmi: null };
+function handleAction(action, el){
+  /* ---- 导航 ---- */
+  if(action==='tab'){ state.tab = el.getAttribute('data-value'); state.subPage=null; state.modalOrgan=null; state.modalTooth=null; render(); return; }
+  if(action==='more-open'){ state.subPage = el.getAttribute('data-page'); render(); return; }
+  if(action==='more-back'){ state.subPage = null; state.aiResult=''; state.localResult=''; render(); return; }
 
-      const weight = last.weight;
-      const sbp = last.sbp;
-      const dbp = last.dbp;
-      const sleep = last.sleep;
-      const bmi = calculateBMI(weight);
+  /* ---- 记录 ---- */
+  if(action==='save-log'){
+    var date = val('lg-date'); if(!date) return;
+    var entry = {
+      id: uid(), date: date, weight: numOrNull('lg-weight'), sbp: numOrNull('lg-sbp'), dbp: numOrNull('lg-dbp'), hr: numOrNull('lg-hr'),
+      sleepHours: numOrNull('lg-sleep'), bedtime: val('lg-bedtime'), meals: checked('lg-meals'), veg: checked('lg-veg'), noBinge: checked('lg-nobinge'),
+      exerciseMin: numOrNull('lg-exercise'), note: val('lg-note')
+    };
+    var idx = state.logs.findIndex(function(l){return l.date===date;});
+    if(idx>=0){ entry.id = state.logs[idx].id; state.logs[idx] = entry; }
+    else state.logs.push(entry);
+    persist('dailyLogs', state.logs); render(); return;
+  }
+  if(action==='del-log'){
+    var id = el.getAttribute('data-id');
+    state.logs = state.logs.filter(function(l){return l.id!==id;});
+    persist('dailyLogs', state.logs); render(); return;
+  }
 
-      // 体重评分：以BMI 22为最佳，偏离扣分
-      let weightScore = Math.max(0, 100 - 7 * Math.abs(bmi - 22));
-      // 血压评分：收缩压>120或舒张压>80扣分
-      let bpScore = Math.max(0, 100 - 0.8 * (Math.max(0, sbp-120) + Math.max(0, dbp-80)));
-      // 睡眠评分：以7.5小时为最佳
-      let sleepScore = Math.max(0, 100 - 15 * Math.abs(sleep - 7.5));
+  /* ---- 器官 ---- */
+  if(action==='open-organ'){ state.modalOrgan = el.getAttribute('data-key'); render(); return; }
+  if(action==='close-organ'){ state.modalOrgan = null; render(); return; }
+  if(action==='set-organ-status'){
+    var key = el.getAttribute('data-key'), status = el.getAttribute('data-status');
+    state.organs[key].status = status; persist('organs', state.organs); render(); return;
+  }
+  if(action==='add-maint'){
+    var key2 = el.getAttribute('data-key');
+    var item = val('new-maint-item-'+key2), period = numOrNull('new-maint-period-'+key2)||12;
+    if(!item) return;
+    state.organs[key2].maintenance.push({id:uid(), item:item, period:period, last:'', note:''});
+    persist('organs', state.organs); render(); return;
+  }
+  if(action==='del-maint'){
+    var key3=el.getAttribute('data-key'), mid=el.getAttribute('data-id');
+    state.organs[key3].maintenance = state.organs[key3].maintenance.filter(function(m){return m.id!==mid;});
+    persist('organs', state.organs); render(); return;
+  }
+  if(action==='add-hist'){
+    var key4=el.getAttribute('data-key');
+    var date2=val('new-hist-date-'+key4); if(!date2) return;
+    state.organs[key4].history.push({id:uid(), date:date2, item:val('new-hist-item-'+key4), result:val('new-hist-result-'+key4), note:val('new-hist-note-'+key4)});
+    persist('organs', state.organs); render(); return;
+  }
+  if(action==='del-hist'){
+    var key5=el.getAttribute('data-key'), hid=el.getAttribute('data-id');
+    state.organs[key5].history = state.organs[key5].history.filter(function(h){return h.id!==hid;});
+    persist('organs', state.organs); render(); return;
+  }
 
-      let total = Math.round((weightScore + bpScore + sleepScore) / 3);
-      return { total, weightScore, bpScore, sleepScore, bmi };
-    }
+  /* ---- 牙齿 ---- */
+  if(action==='open-tooth'){ state.modalTooth = el.getAttribute('data-num'); render(); return; }
+  if(action==='close-tooth'){ state.modalTooth = null; render(); return; }
+  if(action==='set-tooth-status'){
+    var num=el.getAttribute('data-num'), status2=el.getAttribute('data-status');
+    state.teeth[num].status = status2; persist('teeth', state.teeth); render(); return;
+  }
+  if(action==='add-tooth-hist'){
+    var num2=el.getAttribute('data-num');
+    var td=val('new-tooth-date'); if(!td) return;
+    state.teeth[num2].history.push({id:uid(), date:td, treatment:val('new-tooth-treatment'), note:val('new-tooth-note')});
+    persist('teeth', state.teeth); render(); return;
+  }
+  if(action==='del-tooth-hist'){
+    var num3=el.getAttribute('data-num'), thid=el.getAttribute('data-id');
+    state.teeth[num3].history = state.teeth[num3].history.filter(function(h){return h.id!==thid;});
+    persist('teeth', state.teeth); render(); return;
+  }
 
-    function getGoalCompletion(goal) {
-      const last = getLastRecord();
-      if (!last) return 0;
-      const current = last[goal.currentKey];
-      if (current === undefined) return 0;
-      if (goal.betterLower) {
-        // 越小越好，例如体重目标74，起始最差82
-        const worst = goal.startWorst || (goal.target + 10);
-        if (current >= worst) return 0;
-        if (current <= goal.target) return 1;
-        return Math.min(1, Math.max(0, (worst - current) / (worst - goal.target)));
-      } else {
-        // 越大越好，例如睡眠 >=7
-        const best = goal.startBest || goal.target;
-        if (current >= goal.target) return 1;
-        return Math.min(1, Math.max(0, current / goal.target));
-      }
-    }
+  /* ---- 提醒 ---- */
+  if(action==='reminder-add'){
+    var title=val('new-rem-title'); if(!title) return;
+    state.reminders.push({id:uid(), title:title, category:val('new-rem-category'), last:val('new-rem-last'), period:numOrNull('new-rem-period')||6, note:''});
+    persist('reminders', state.reminders); render(); return;
+  }
+  if(action==='reminder-done'){
+    var rid=el.getAttribute('data-id');
+    state.reminders = state.reminders.map(function(r){ return r.id===rid ? Object.assign({},r,{last:todayStr()}) : r; });
+    persist('reminders', state.reminders); render(); return;
+  }
+  if(action==='reminder-del'){
+    var rid2=el.getAttribute('data-id');
+    state.reminders = state.reminders.filter(function(r){return r.id!==rid2;});
+    persist('reminders', state.reminders); render(); return;
+  }
 
-    function updateDashboard() {
-      const scores = computeScores();
-      const last = getLastRecord();
+  /* ---- 目标 ---- */
+  if(action==='goal-add'){
+    var name=val('new-goal-name'); if(!name) return;
+    state.goals.push({id:uid(), name:name, category:val('new-goal-category'), start:numOrNull('new-goal-start'), target:numOrNull('new-goal-target'), current:numOrNull('new-goal-current'), due:val('new-goal-due'), note:'', createdAt:todayStr()});
+    persist('goals', state.goals); render(); return;
+  }
+  if(action==='goal-del'){
+    var gid2=el.getAttribute('data-id');
+    state.goals = state.goals.filter(function(g){return g.id!==gid2;});
+    persist('goals', state.goals); render(); return;
+  }
 
-      // 综合评分
-      totalScoreEl.textContent = scores.total !== null ? scores.total : '--';
+  /* ---- AI / 总结 ---- */
+  if(action==='gen-local'){ state.localResult = localSummary(); render(); return; }
+  if(action==='gen-ai'){ runAI(); return; }
 
-      // 体重卡片
-      if (last) {
-        lastWeightEl.textContent = last.weight + ' kg';
-        const bmiVal = scores.bmi ? scores.bmi.toFixed(1) : '--';
-        bmiDisplayEl.textContent = 'BMI ' + bmiVal;
-        lastBPEl.textContent = last.sbp + '/' + last.dbp;
-        lastSleepEl.textContent = last.sleep + 'h';
-        sleepQualityEl.textContent = '质量 ' + (last.quality || '--') + '/5';
-      } else {
-        lastWeightEl.textContent = '-- kg';
-        bmiDisplayEl.textContent = 'BMI --';
-        lastBPEl.textContent = '--/--';
-        lastSleepEl.textContent = '--h';
-        sleepQualityEl.textContent = '--';
-      }
+  /* ---- 设置 ---- */
+  if(action==='save-settings'){
+    var p = JSON.parse(JSON.stringify(state.profile));
+    p.name = val('set-name'); p.heightCm = Number(val('set-height'))||170; p.birthYear = Number(val('set-birth'))||1990; p.gender = val('set-gender');
+    ['bmi','sbp','dbp','hr','sleep'].forEach(function(k){
+      p.targets[k] = [Number(val('set-target-'+k+'-0')), Number(val('set-target-'+k+'-1'))];
+    });
+    state.profile = p; persist('profile', p); render(); return;
+  }
+}
 
-      // 目标完成率
-      let totalGoalProgress = 0;
-      if (goals.length) {
-        totalGoalProgress = goals.reduce((sum, g) => sum + getGoalCompletion(g), 0) / goals.length;
-      }
-      goalProgressEl.textContent = Math.round(totalGoalProgress * 100) + '%';
+function runAI(){
+  var text = val('ai-report-text');
+  if(!text || !text.trim()) return;
+  state.aiLoading = true; state.aiResult=''; render();
+  var prompt = '你是一名健康档案助理。以下是用户粘贴的一段体检/检查报告文本，请用简体中文给出简明、结构化的解读，用小标题+要点列出：①主要发现 ②数值是否在正常范围（如能判断）③建议关注点 ④是否建议尽快就医。语气客观、不做诊断结论，最后提醒"以医生解读为准"。\n\n报告内容：\n' + text;
+  fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1000, messages:[{role:'user', content:prompt}] })
+  }).then(function(r){ return r.json(); }).then(function(data){
+    var t = (data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('\n');
+    state.aiResult = t || '未获取到分析结果，请稍后重试。';
+    var next = [{id:uid(), date:todayStr(), input:text.slice(0,200), summary:t}].concat(state.aiNotes).slice(0,30);
+    state.aiNotes = next; persist('aiNotes', next);
+    state.aiLoading = false; render();
+  }).catch(function(){
+    state.aiResult = 'AI 解读失败，请检查网络后重试。';
+    state.aiLoading = false; render();
+  });
+}
 
-      renderReminders();
-      renderGoals();
-      renderTable();
-      renderChart();
-    }
-
-    // 提醒渲染
-    function renderReminders() {
-      const today = new Date();
-      const thirtyDaysLater = new Date(today);
-      thirtyDaysLater.setDate(today.getDate() + 30);
-
-      const upcoming = reminders.filter(r => {
-        if (r.done) return false;
-        const due = new Date(r.date);
-        return due <= thirtyDaysLater && due >= today;
-      }).sort((a,b) => new Date(a.date) - new Date(b.date));
-
-      reminderListEl.innerHTML = '';
-      if (upcoming.length === 0) {
-        reminderListEl.innerHTML = '<div style="color:#7f8c8d; font-size:0.85rem; padding:8px;">✨ 暂无近期提醒，继续保持</div>';
-        return;
-      }
-
-      upcoming.forEach(r => {
-        const dueDate = new Date(r.date);
-        const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-        const urgentClass = diffDays <= 7 ? 'urgent' : '';
-        const div = document.createElement('div');
-        div.className = `reminder-item ${urgentClass}`;
-        div.innerHTML = `<span class="reminder-text">${r.text}</span><span class="reminder-date">📅 ${r.date} (${diffDays}天)</span>`;
-        reminderListEl.appendChild(div);
-      });
-    }
-
-    // 目标进度条
-    function renderGoals() {
-      goalContainerEl.innerHTML = '';
-      goals.forEach(g => {
-        const percent = getGoalCompletion(g);
-        const displayPercent = Math.round(percent * 100);
-        const row = document.createElement('div');
-        row.className = 'goal-row';
-        row.innerHTML = `
-          <div class="goal-info">${g.name}</div>
-          <div class="progress-bar-bg"><div class="progress-fill" style="width:${displayPercent}%;"></div></div>
-          <div class="goal-percent">${displayPercent}%</div>
-        `;
-        goalContainerEl.appendChild(row);
-      });
-    }
-
-    // 表格渲染
-    function renderTable() {
-      dataTableBody.innerHTML = '';
-      if (healthData.length === 0) {
-        dataTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#95a5b5;">暂无记录</td></tr>';
-        return;
-      }
-      // 显示最近10条
-      const recent = healthData.slice(-10).reverse();
-      recent.forEach(r => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${r.date}</td><td>${r.weight}</td><td>${r.sbp}</td><td>${r.dbp}</td><td>${r.sleep}</td><td>${r.quality || ''}</td>`;
-        dataTableBody.appendChild(tr);
-      });
-    }
-
-    // 图表
-    function renderChart() {
-      if (trendChart) trendChart.destroy();
-      if (healthData.length === 0) return;
-
-      const recent = healthData.slice(-10);
-      const labels = recent.map(r => r.date);
-      const weights = recent.map(r => r.weight);
-      const sbps = recent.map(r => r.sbp);
-      const dbps = recent.map(r => r.dbp);
-
-      trendChart = new Chart(trendCtx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [
-            {
-              label: '体重 (kg)',
-              data: weights,
-              borderColor: '#2f7c6b',
-              backgroundColor: 'rgba(47,124,107,0.1)',
-              yAxisID: 'y',
-              tension: 0.2,
-              pointRadius: 3
-            },
-            {
-              label: '收缩压',
-              data: sbps,
-              borderColor: '#d43f3f',
-              backgroundColor: 'transparent',
-              yAxisID: 'y1',
-              tension: 0.2,
-              pointRadius: 3
-            },
-            {
-              label: '舒张压',
-              data: dbps,
-              borderColor: '#e67e22',
-              backgroundColor: 'transparent',
-              yAxisID: 'y1',
-              tension: 0.2,
-              pointRadius: 3
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          plugins: {
-            legend: { labels: { boxWidth: 12, font: { size: 10 } } }
-          },
-          scales: {
-            y: {
-              type: 'linear',
-              position: 'left',
-              title: { display: true, text: '体重 (kg)' },
-              grid: { color: '#f0f0f0' }
-            },
-            y1: {
-              type: 'linear',
-              position: 'right',
-              title: { display: true, text: '血压 (mmHg)' },
-              grid: { display: false },
-              min: 60,
-              max: 160
-            }
-          }
-        }
-      });
-    }
-
-    // 添加记录
-    function addRecord() {
-      const date = newDateInput.value;
-      const weight = parseFloat(newWeightInput.value);
-      const sbp = parseInt(newSBPInput.value, 10);
-      const dbp = parseInt(newDBPInput.value, 10);
-      const sleep = parseFloat(newSleepInput.value);
-      const quality = newQualitySelect.value ? parseInt(newQualitySelect.value, 10) : null;
-
-      if (!date || isNaN(weight) || isNaN(sbp) || isNaN(dbp) || isNaN(sleep)) {
-        alert('请完整填写日期、体重、血压和睡眠时长');
-        return;
-      }
-
-      const newRecord = { date, weight, sbp, dbp, sleep, quality: quality || undefined };
-      healthData.push(newRecord);
-      healthData.sort((a,b) => (a.date < b.date ? -1 : 1));
-      saveData(STORAGE_HEALTH, healthData);
-      updateDashboard();
-
-      // 清空输入
-      newWeightInput.value = '';
-      newSBPInput.value = '';
-      newDBPInput.value = '';
-      newSleepInput.value = '';
-      newQualitySelect.value = '';
-      newDateInput.value = '';
-    }
-
-    // 导出数据
-    function exportData() {
-      const exportObj = {
-        healthData, reminders, goals, settings,
-        exportDate: new Date().toISOString()
-      };
-      const dataStr = JSON.stringify(exportObj, null, 2);
-      const blob = new Blob([dataStr], {type: 'application/json'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `HumanOS_backup_${new Date().toISOString().slice(0,10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    // 事件绑定
-    addRecordBtn.addEventListener('click', addRecord);
-    exportDataBtn.addEventListener('click', exportData);
-
-    // 设置默认日期为今天
-    newDateInput.value = new Date().toISOString().slice(0,10);
-
-    // 初始渲染
-    updateDashboard();
-
-    // 可选：提醒完成状态切换(简单演示，不做交互深度)
-  })();
+/* ============================== 初始化 ============================== */
+function init(){
+  Promise.all([
+    loadKey('profile', DEFAULT_PROFILE),
+    loadKey('dailyLogs', null),
+    loadKey('reminders', null),
+    loadKey('goals', null),
+    loadKey('organs', null),
+    loadKey('teeth', null),
+    loadKey('aiNotes', []),
+  ]).then(function(res){
+    state.profile = res[0];
+    state.logs = res[1] || defaultLogs();
+    state.reminders = res[2] || defaultReminders();
+    state.goals = res[3] || defaultGoals();
+    state.organs = res[4] || defaultOrgans();
+    state.teeth = res[5] || defaultTeeth();
+    state.aiNotes = res[6] || [];
+    state.loading = false;
+    render();
+  }).catch(function(){
+    state.logs = defaultLogs(); state.reminders = defaultReminders(); state.goals = defaultGoals();
+    state.organs = defaultOrgans(); state.teeth = defaultTeeth(); state.aiNotes = [];
+    state.loading = false; render();
+  });
+}
+if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', init); } else { init(); }
 </script>
 </body>
 </html>
